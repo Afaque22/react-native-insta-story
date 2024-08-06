@@ -15,6 +15,7 @@ export interface IUserStory<T = Record<string, any>> {
   stories: IUserStoryItem<T>[];
   /** INTERNAL USE ONLY */
   seen?: boolean;
+  isSeen? : boolean;
 }
 
 export interface IUserStoryItem<T = Record<string, any>> {
