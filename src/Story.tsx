@@ -39,12 +39,17 @@ export const Story = ({
   avatarImageStyle,
   avatarWrapperStyle,
   avatarFlatListProps,
-}: StoryProps) => {
+}: StoryProps) => {  
   const [dataState, setDataState] = useState<IUserStory[]>(data);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [selectedData, setSelectedData] = useState<IUserStory[]>([]);
   const cube = useRef<CubeNavigationHorizontal | AndroidCubeEffect>();
+
+
+  useEffect(() => {
+    setDataState(data);
+  }, [data]);
 
   // Component Functions
   const _handleStoryItemPress = (item: IUserStory, index?: number) => {
@@ -135,7 +140,7 @@ export const Story = ({
           storyUserContainerStyle={storyUserContainerStyle}
           storyImageStyle={storyImageStyle}
           storyAvatarImageStyle={storyAvatarImageStyle}
-          storyContainerStyle={storyContainerStyle}
+          // storyContainerStyle={storyContainerStyle}
         />
       );
     });
