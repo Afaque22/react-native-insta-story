@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import StoryCircleListItem from './StoryCircleListItem';
 import { StoryCircleListViewProps } from 'src/interfaces';
@@ -17,10 +17,33 @@ const StoryCircleListView = ({
   avatarWrapperStyle,
   avatarFlatListProps,
 }: StoryCircleListViewProps) => {
+
+  // console.log('..........data......',data);
+
+
+
+  // Combining arrays
+ 
+
+  const sortedData = useMemo(() => {
+    const unseenItems = data.filter((item : any) => !item.isSeen);
+    const seenItems = data.filter((item : any)  => item.isSeen);
+    // Sorting only the filtered data
+    const sortedUnseenItems = [...unseenItems].sort((a, b) => new Date(b.created_at).getDate() - new Date(a.created_at).getDate());
+    const sortedSeenItems = [...seenItems].sort((a, b) => new Date(b.created_at).getDate() - new Date(a.created_at).getDate());
+   const combinedData = [...sortedUnseenItems, ...sortedSeenItems];
+   return combinedData
+  },[data])
+  
+  
+  // const sortedData = useMemo(() => {
+  //   return data.sort((a : any, b : any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  // }, [data]); 
+  
   return (
     <FlatList
       keyExtractor={(_item, index) => index.toString()}
-      data={data}
+      data={sortedData}
       horizontal
       style={styles.paddingLeft}
       showsVerticalScrollIndicator={false}
