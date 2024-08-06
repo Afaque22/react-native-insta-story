@@ -12,6 +12,7 @@ import { usePrevious } from './helpers/StateHelpers';
 import { IUserStory, StoryCircleListItemProps } from './interfaces';
 
 import DEFAULT_AVATAR from './assets/images/no_avatar.png';
+import { useGlobalChatContext } from '../../../context/ChatContext';
 
 const StoryCircleListItem = ({
   item,
@@ -27,12 +28,15 @@ const StoryCircleListItem = ({
   avatarWrapperStyle,
 }: StoryCircleListItemProps) => {
   const [isPressed, setIsPressed] = useState(item?.seen);
+  const {user} = useGlobalChatContext();
 
   const prevSeen = usePrevious(item?.seen);
 
   useEffect(() => {
+
     if (prevSeen != item?.seen) {
       setIsPressed(item?.seen);
+    
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.seen]);
@@ -56,13 +60,20 @@ const StoryCircleListItem = ({
             width: avatarWrapperSize,
           },
           avatarWrapperStyle,
-          !isPressed
-            ? {
-                borderColor: unPressedBorderColor ?? 'red',
-              }
-            : {
-                borderColor: pressedBorderColor ?? 'grey',
-              },
+          // !isPressed
+          //   ? {
+          //       borderColor: unPressedBorderColor ?? '#1877F2',
+          //     }
+          //   : {
+          //       borderColor: pressedBorderColor ?? 'grey',
+          //     },
+              !item?.isSeen
+              ? {
+                  borderColor: unPressedBorderColor ?? '#1877F2',
+                }
+              : {
+                  borderColor: pressedBorderColor ?? 'grey',
+                },
         ]}
       >
         <Image
@@ -89,11 +100,11 @@ const StoryCircleListItem = ({
               ...avatarTextStyle,
             },
             isPressed
-              ? { color: pressedAvatarTextColor || undefined }
-              : { color: unPressedAvatarTextColor || undefined },
+              ? { color: pressedAvatarTextColor || '#99A1BE' }
+              : { color: unPressedAvatarTextColor || '#99A1BE' },
           ]}
         >
-          {item.user_name}
+          {user?.id === item?.user_id ? 'Your Story' : item.user_name}
         </Text>
       )}
     </View>
