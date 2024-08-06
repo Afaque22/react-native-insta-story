@@ -1,3 +1,4 @@
+//Afaque
 import React, { Fragment, useRef, useState, useEffect } from 'react';
 import { Dimensions, View, Platform, StyleSheet } from 'react-native';
 import Modal from 'react-native-modalbox';
