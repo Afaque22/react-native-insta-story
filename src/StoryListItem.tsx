@@ -1,3 +1,4 @@
+//changes by Afaque
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Animated,
@@ -20,6 +21,7 @@ import {
   NextOrPrevious,
   StoryListItemProps,
 } from './interfaces';
+import Video from 'react-native-video';
 
 const { width, height } = Dimensions.get('window');
 
@@ -199,6 +201,12 @@ export const StoryListItem = ({
     }
   }, [currentPage, index, onStorySeen, current]);
 
+  const extension = content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
+  const isVideo = ['mp4', 'avi', 'mov', 'wmv'].includes(extension);
+
+  console.log('content[current].story_image',content[current]);
+  
+
   return (
     <GestureRecognizer
       key={key}
@@ -209,11 +217,17 @@ export const StoryListItem = ({
     >
       <SafeAreaView>
         <View style={styles.backgroundContainer}>
+          {isVideo ? (
+            <Video source={{ uri: content[current].story_image }}
+            style={[styles.image, storyImageStyle]} onLoad={() => start()} />
+          ) :
+          (
           <Image
             onLoadEnd={() => start()}
             source={{ uri: content[current].story_image }}
             style={[styles.image, storyImageStyle]}
           />
+          )}
           {load && (
             <View style={styles.spinnerContainer}>
               <ActivityIndicator size="large" color={'white'} />
