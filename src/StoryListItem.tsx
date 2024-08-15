@@ -21,7 +21,7 @@ import {
   NextOrPrevious,
   StoryListItemProps,
 } from './interfaces';
-import Video from 'react-native-video';
+import Video, { VideoRef }  from 'react-native-video';
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,6 +64,12 @@ export const StoryListItem = ({
 
   const prevCurrentPage = usePrevious(currentPage);
 
+  const [paused, setPaused] = useState(true);
+  const videoRef = useRef<VideoRef | null>(null);
+
+  const extension = content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
+  const isVideo = ['mp4', 'avi', 'mov', 'wmv'].includes(extension);
+
   useEffect(() => {
     let isPrevious = !!prevCurrentPage && prevCurrentPage > currentPage;
     if (isPrevious) {
@@ -84,7 +90,10 @@ export const StoryListItem = ({
       }
     });
     setContent(data);
-    start();
+    if (!load) {
+      start();
+    }
+   
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
@@ -108,6 +117,18 @@ export const StoryListItem = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current]);
+
+  useEffect(() => {
+    // When the page changes, check if it's the current page
+    if (currentPage === index) {
+      setPaused(false);
+    } else {
+      setPaused(true);
+      progress.setValue(0);
+      progress.stopAnimation();
+    }
+  }, [currentPage, index]);
+  
 
   function start() {
     setLoad(false);
@@ -146,6 +167,7 @@ export const StoryListItem = ({
   };
 
   function next() {
+    setPaused(true)
     // check if the next content is not empty
     setLoad(true);
     if (current !== content.length - 1) {
@@ -175,7 +197,7 @@ export const StoryListItem = ({
     }
   }
 
-  function close(state: NextOrPrevious) {
+  function close(state: NextOrPrevious) {    
     let data = [...content];
     data.map((x) => (x.finish = 0));
     setContent(data);
@@ -201,11 +223,12 @@ export const StoryListItem = ({
     }
   }, [currentPage, index, onStorySeen, current]);
 
-  const extension = content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
-  const isVideo = ['mp4', 'avi', 'mov', 'wmv'].includes(extension);
 
-  console.log('content[current].story_image',content[current]);
   
+  const handleVideoLoadStart  = () => {
+    setLoad(true)
+    progress.setValue(0)
+  }
 
   return (
     <GestureRecognizer
@@ -218,8 +241,20 @@ export const StoryListItem = ({
       <SafeAreaView>
         <View style={styles.backgroundContainer}>
           {isVideo ? (
-            <Video source={{ uri: content[current].story_image }}
-            style={[styles.image, storyImageStyle]} onLoad={() => start()} />
+          <Video ref={videoRef} 
+            paused={paused}
+            source={{ uri: content[current].story_image }}
+            onError={() => console.log('videoerror')}
+            onBuffer={() => setLoad(true)}
+            onLoad={() => start()} 
+            onLoadStart={handleVideoLoadStart}
+            style={[styles.image, storyImageStyle]} 
+            renderLoader={load &&
+              <View style={styles.spinnerContainer}>
+              <ActivityIndicator size="large" color={'white'} />
+            </View>
+            }
+            />
           ) :
           (
           <Image
@@ -337,8 +372,8 @@ export const StoryListItem = ({
           onPress={onSwipeUp}
           style={styles.swipeUpBtn}
         >
-          <Text style={styles.swipeText}></Text>
-          <Text style={styles.swipeText}>{swipeText}</Text>
+          {/* <Text style={styles.swipeText}></Text>
+          <Text style={styles.swipeText}>{swipeText}</Text> */}
         </TouchableOpacity>
       )}
     </GestureRecognizer>
