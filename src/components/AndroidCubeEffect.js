@@ -1,3 +1,4 @@
+// changes by Afaque
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -64,6 +65,7 @@ export default class AndroidCubeEffect extends React.Component {
         onDoneSwiping(gestureState);
       },
     });
+    
 
     const onDoneSwiping = (gestureState) => {
       if (this.props.callbackOnSwipe) {
@@ -86,8 +88,8 @@ export default class AndroidCubeEffect extends React.Component {
       });
       Animated.spring(this._animatedValue, {
         toValue: { x: goTo, y: 0 },
-        friction: 5,
-        tension: 0.6,
+        friction: 6,
+        tension: 0.8,
         useNativeDriver: false,
       }).start();
       setTimeout(() => {
