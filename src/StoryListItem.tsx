@@ -1,4 +1,4 @@
-//changes by Afaque
+//changes by Afaque 0.1
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Animated,
@@ -120,8 +120,11 @@ export const StoryListItem = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current]);
 
+
+  
   useEffect(() => {
     // When the page changes, check if it's the current page
+    console.log('currentPage',currentPage,'index',index);
     if (currentPage === index) {
       setPaused(false);
     } else {
@@ -137,9 +140,13 @@ export const StoryListItem = ({
     progress.setValue(0);
     setVideoDuration(data?.duration);
     startAnimation(data?.duration);
+ 
   }
 
   function startAnimation(dur : any) {
+    if (currentPage !== index) {
+      return;
+    }
     const animationDuration = isVideo
     ? Math.min(dur ? dur * 1000 : duration, maxDuration)
     : duration;
@@ -170,11 +177,11 @@ export const StoryListItem = ({
 
   const config = {
     velocityThreshold: 0.3,
-    directionalOffsetThreshold: 80,
+    directionalOffsetThreshold: 90,
   };
 
   function next() {
-    setPaused(true)
+    // setPaused(true)
     // check if the next content is not empty
     setLoad(true);
     if (current !== content.length - 1) {
@@ -236,6 +243,7 @@ export const StoryListItem = ({
     setLoad(true)
     progress.setValue(0)
   }
+  
 
   return (
     <GestureRecognizer
@@ -253,7 +261,7 @@ export const StoryListItem = ({
             source={{ uri: content[current].story_image }}
             onError={() => console.log('videoerror')}
             onBuffer={() => setLoad(true)}
-            onLoad={(val) => start(val)} 
+            onLoad={(val) => start({ duration: val.duration })} 
             onLoadStart={handleVideoLoadStart}
             style={[styles.image, storyImageStyle]} 
             renderLoader={load &&
@@ -290,7 +298,7 @@ export const StoryListItem = ({
                 <Animated.View
                   style={[
                     {
-                      flex: current == key ? progress : content[key].finish,
+                      flex: current === key ? progress : content[key].finish,
                       height: 2,
                       backgroundColor: 'white',
                     },
