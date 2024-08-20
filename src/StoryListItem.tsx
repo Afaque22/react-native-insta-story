@@ -65,10 +65,12 @@ export const StoryListItem = ({
   const prevCurrentPage = usePrevious(currentPage);
 
   const [paused, setPaused] = useState(true);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const videoRef = useRef<VideoRef | null>(null);
 
   const extension = content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
   const isVideo = ['mp4', 'avi', 'mov', 'wmv'].includes(extension);
+  const maxDuration = 30000;
 
   useEffect(() => {
     let isPrevious = !!prevCurrentPage && prevCurrentPage > currentPage;
@@ -91,7 +93,7 @@ export const StoryListItem = ({
     });
     setContent(data);
     if (!load) {
-      start();
+      start({ duration: duration });
     }
    
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,12 +108,12 @@ export const StoryListItem = ({
           current > prevCurrent &&
           content[current - 1].story_image == content[current].story_image
         ) {
-          start();
+          start({ duration: duration });
         } else if (
           current < prevCurrent &&
           content[current + 1].story_image == content[current].story_image
         ) {
-          start();
+          start({ duration: duration });
         }
       }
     }
@@ -130,16 +132,21 @@ export const StoryListItem = ({
   }, [currentPage, index]);
   
 
-  function start() {
+  function start(data: { duration: number }) {
     setLoad(false);
     progress.setValue(0);
-    startAnimation();
+    setVideoDuration(data?.duration);
+    startAnimation(data?.duration);
   }
 
-  function startAnimation() {
+  function startAnimation(dur : any) {
+    const animationDuration = isVideo
+    ? Math.min(dur ? dur * 1000 : duration, maxDuration)
+    : duration;
+
     Animated.timing(progress, {
       toValue: 1,
-      duration: duration,
+      duration: animationDuration,
       useNativeDriver: false,
     }).start(({ finished }) => {
       if (finished) {
@@ -246,7 +253,7 @@ export const StoryListItem = ({
             source={{ uri: content[current].story_image }}
             onError={() => console.log('videoerror')}
             onBuffer={() => setLoad(true)}
-            onLoad={() => start()} 
+            onLoad={(val) => start(val)} 
             onLoadStart={handleVideoLoadStart}
             style={[styles.image, storyImageStyle]} 
             renderLoader={load &&
@@ -258,7 +265,7 @@ export const StoryListItem = ({
           ) :
           (
           <Image
-            onLoadEnd={() => start()}
+            onLoadEnd={() => start({ duration: duration })}
             source={{ uri: content[current].story_image }}
             style={[styles.image, storyImageStyle]}
           />
@@ -334,7 +341,7 @@ export const StoryListItem = ({
             onLongPress={() => setPressed(true)}
             onPressOut={() => {
               setPressed(false);
-              startAnimation();
+              startAnimation({ duration: null });
             }}
             onPress={() => {
               if (!pressed && !load) {
@@ -349,7 +356,7 @@ export const StoryListItem = ({
             onLongPress={() => setPressed(true)}
             onPressOut={() => {
               setPressed(false);
-              startAnimation();
+              startAnimation({ duration: null });
             }}
             onPress={() => {
               if (!pressed && !load) {
