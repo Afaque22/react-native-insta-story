@@ -1,16 +1,16 @@
 //Afaque
-import React, { Fragment, useRef, useState, useEffect } from 'react';
-import { Dimensions, View, Platform, StyleSheet } from 'react-native';
+import React, {Fragment, useRef, useState, useEffect} from 'react';
+import {Dimensions, View, Platform, StyleSheet} from 'react-native';
 import Modal from 'react-native-modalbox';
 
 import StoryListItem from './StoryListItem';
 import StoryCircleListView from './StoryCircleListView';
-import { isNullOrWhitespace } from './helpers';
+import {isNullOrWhitespace} from './helpers';
 import AndroidCubeEffect from './components/AndroidCubeEffect';
 import CubeNavigationHorizontal from './components/CubeNavigationHorizontal';
-import { IUserStory, NextOrPrevious, StoryProps } from './interfaces';
+import {IUserStory, NextOrPrevious, StoryProps} from './interfaces';
 
-const { height, width } = Dimensions.get('window');
+const {height, width} = Dimensions.get('window');
 
 export const Story = ({
   data,
@@ -40,13 +40,14 @@ export const Story = ({
   avatarImageStyle,
   avatarWrapperStyle,
   avatarFlatListProps,
-}: StoryProps) => {  
+  viewsData,
+}: StoryProps) => {
   const [dataState, setDataState] = useState<IUserStory[]>(data);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [selectedData, setSelectedData] = useState<IUserStory[]>([]);
+  const [isBottomSheetOpen, setisBottomSheetOpen] = useState(false);
   const cube = useRef<CubeNavigationHorizontal | AndroidCubeEffect>();
-
 
   useEffect(() => {
     setDataState(data);
@@ -111,8 +112,13 @@ export const Story = ({
     }
   }
 
+  const openSheet = () => {
+    setisBottomSheetOpen(!isBottomSheetOpen);
+  };
+
   const renderStoryList = () =>
     selectedData.map((x, i) => {
+      const ownId = x.own_id ?? 0;
       return (
         <StoryListItem
           duration={duration * 1000}
@@ -120,6 +126,7 @@ export const Story = ({
           userId={x.user_id}
           profileName={x.user_name}
           profileImage={x.user_image}
+          own_id={ownId}
           stories={x.stories}
           currentPage={currentPage}
           onFinish={onStoryFinish}
@@ -141,6 +148,9 @@ export const Story = ({
           storyUserContainerStyle={storyUserContainerStyle}
           storyImageStyle={storyImageStyle}
           storyAvatarImageStyle={storyAvatarImageStyle}
+          viewsData={viewsData || []}
+          openSheet={openSheet}
+
           // storyContainerStyle={storyContainerStyle}
         />
       );
@@ -155,8 +165,7 @@ export const Story = ({
             if (x != currentPage) {
               setCurrentPage(parseInt(x));
             }
-          }}
-        >
+          }}>
           {renderStoryList()}
         </CubeNavigationHorizontal>
       );
@@ -168,8 +177,7 @@ export const Story = ({
             if (x != currentPage) {
               setCurrentPage(parseInt(x));
             }
-          }}
-        >
+          }}>
           {renderStoryList()}
         </AndroidCubeEffect>
       );
@@ -201,9 +209,8 @@ export const Story = ({
         position="center"
         swipeToClose
         swipeArea={250}
-        backButtonClose
-        coverScreen={true}
-      >
+        backButtonClose={!isBottomSheetOpen}
+        coverScreen={true}>
         {renderCube()}
       </Modal>
     </Fragment>
