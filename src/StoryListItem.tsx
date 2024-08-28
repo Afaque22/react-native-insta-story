@@ -1,5 +1,5 @@
 //changes by Afaque 0.1
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   Animated,
   Image,
@@ -12,23 +12,28 @@ import {
   View,
   Platform,
   SafeAreaView,
+  TextInput,
+  KeyboardAvoidingView,
+  Keyboard,
+  Alert,
+  BackHandler,
 } from 'react-native';
 import GestureRecognizer from 'react-native-swipe-gestures';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { usePrevious, isNullOrWhitespace } from './helpers';
-import {
-  IUserStoryItem,
-  NextOrPrevious,
-  StoryListItemProps,
-} from './interfaces';
-import Video, { VideoRef }  from 'react-native-video';
+import {usePrevious, isNullOrWhitespace} from './helpers';
+import {IUserStoryItem, NextOrPrevious, StoryListItemProps} from './interfaces';
+import Video, {VideoRef} from 'react-native-video';
+import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheetComp from './BottomSheetComp';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 export const StoryListItem = ({
   index,
   key,
   userId,
+  own_id,
   profileImage,
   profileName,
   duration,
@@ -47,12 +52,14 @@ export const StoryListItem = ({
   storyImageStyle,
   storyAvatarImageStyle,
   storyContainerStyle,
+  viewsData,
+  openSheet,
   ...props
 }: StoryListItemProps) => {
   const [load, setLoad] = useState<boolean>(true);
   const [pressed, setPressed] = useState<boolean>(false);
   const [content, setContent] = useState<IUserStoryItem[]>(
-    stories.map((x) => ({
+    stories.map(x => ({
       ...x,
       finish: 0,
     })),
@@ -61,14 +68,20 @@ export const StoryListItem = ({
   const [current, setCurrent] = useState(0);
 
   const progress = useRef(new Animated.Value(0)).current;
+  const keyboardHeight = useRef(new Animated.Value(0));
+  const [isKeyboardOpen, setisKeyboardOpen] = useState(false);
+  const [isLiked, setisLiked] = useState(false);
 
   const prevCurrentPage = usePrevious(currentPage);
 
   const [paused, setPaused] = useState(true);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const videoRef = useRef<VideoRef | null>(null);
+  const storyViewsRef = useRef<BottomSheet>(null);
+  const videoProgress = useRef<number>(0);
 
-  const extension = content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
+  const extension =
+    content[current]?.story_image?.split('.').pop()?.toLowerCase() || '';
   const isVideo = ['mp4', 'avi', 'mov', 'wmv'].includes(extension);
   const maxDuration = 30000;
 
@@ -93,9 +106,9 @@ export const StoryListItem = ({
     });
     setContent(data);
     if (!load) {
-      start({ duration: duration });
+      start({duration: duration});
     }
-   
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
@@ -108,23 +121,21 @@ export const StoryListItem = ({
           current > prevCurrent &&
           content[current - 1].story_image == content[current].story_image
         ) {
-          start({ duration: duration });
+          start({duration: duration});
         } else if (
           current < prevCurrent &&
           content[current + 1].story_image == content[current].story_image
         ) {
-          start({ duration: duration });
+          start({duration: duration});
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current]);
 
-
-  
   useEffect(() => {
     // When the page changes, check if it's the current page
-    console.log('currentPage',currentPage,'index',index);
+
     if (currentPage === index) {
       setPaused(false);
     } else {
@@ -133,29 +144,35 @@ export const StoryListItem = ({
       progress.stopAnimation();
     }
   }, [currentPage, index]);
-  
 
-  function start(data: { duration: number }) {
-    setLoad(false);
-    progress.setValue(0);
-    setVideoDuration(data?.duration);
-    startAnimation(data?.duration);
- 
+  function start(data: {duration: number}) {
+    if (data.duration && data.duration > 0) {
+      setLoad(false);
+      progress.setValue(0);
+      setVideoDuration(data?.duration);
+      startAnimation(data?.duration);
+    } else {
+      setLoad(false);
+      progress.setValue(0);
+      setVideoDuration(duration);
+      startAnimation(null);
+    }
   }
 
-  function startAnimation(dur : any) {
+  function startAnimation(dur: any) {
     if (currentPage !== index) {
       return;
     }
+
     const animationDuration = isVideo
-    ? Math.min(dur ? dur * 1000 : duration, maxDuration)
-    : duration;
+      ? Math.min(dur ? dur * 1000 : duration, maxDuration)
+      : duration;
 
     Animated.timing(progress, {
       toValue: 1,
       duration: animationDuration,
       useNativeDriver: false,
-    }).start(({ finished }) => {
+    }).start(({finished}) => {
       if (finished) {
         next();
       }
@@ -211,9 +228,9 @@ export const StoryListItem = ({
     }
   }
 
-  function close(state: NextOrPrevious) {    
+  function close(state: NextOrPrevious) {
     let data = [...content];
-    data.map((x) => (x.finish = 0));
+    data.map(x => (x.finish = 0));
     setContent(data);
     progress.setValue(0);
     if (currentPage == index) {
@@ -237,13 +254,102 @@ export const StoryListItem = ({
     }
   }, [currentPage, index, onStorySeen, current]);
 
+  const handleVideoLoadStart = () => {
+    setLoad(true);
+    progress.setValue(0);
+  };
 
-  
-  const handleVideoLoadStart  = () => {
-    setLoad(true)
-    progress.setValue(0)
-  }
-  
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      event => {
+        Animated.timing(keyboardHeight.current, {
+          duration: event.duration,
+          toValue: event.endCoordinates.height + 10,
+          useNativeDriver: false,
+        }).start();
+        onFocusInput();
+      },
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      event => {
+        Animated.timing(keyboardHeight.current, {
+          duration: event.duration,
+          toValue: 0,
+          useNativeDriver: false,
+        }).start();
+        onBlurInput();
+      },
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
+  const onFocusInput = () => {
+    progress.stopAnimation();
+    setPaused(true);
+    setisKeyboardOpen(true);
+  };
+
+  const onBlurInput = () => {
+    setPaused(false);
+    setisKeyboardOpen(false);
+    const remainingTime = videoDuration
+      ? videoDuration - videoProgress.current
+      : null;
+    startAnimation(remainingTime);
+  };
+
+  const openViewsSheet = () => {
+    progress.stopAnimation();
+    setPaused(true);
+    storyViewsRef.current?.expand();
+    if (typeof openSheet === 'function') {
+      openSheet();
+    }
+  };
+
+  const closeViewsSheet = () => {
+    storyViewsRef.current?.close();
+    const remainingTime = videoDuration
+      ? videoDuration - videoProgress.current
+      : null;
+    startAnimation(remainingTime);
+    setPaused(false);
+    if (typeof openSheet === 'function') {
+      openSheet();
+    }
+  };
+
+  const deleteStory = () => {
+    progress.stopAnimation();
+    setPaused(true);
+    const remainingTime = videoDuration
+      ? videoDuration - videoProgress.current
+      : null;
+    Alert.alert('Delete Story', 'Are you sure you want to delete this story?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+        onPress: () => {
+          startAnimation(remainingTime);
+          setPaused(false);
+        },
+      },
+      {
+        text: 'OK',
+        onPress: () => {
+          startAnimation(remainingTime);
+          setPaused(false);
+        },
+      },
+    ]);
+  };
 
   return (
     <GestureRecognizer
@@ -251,32 +357,34 @@ export const StoryListItem = ({
       onSwipeUp={onSwipeUp}
       onSwipeDown={onSwipeDown}
       config={config}
-      style={[styles.container, storyContainerStyle]}
-    >
+      style={[styles.container, storyContainerStyle]}>
       <SafeAreaView>
         <View style={styles.backgroundContainer}>
           {isVideo ? (
-          <Video ref={videoRef} 
-            paused={paused}
-            source={{ uri: content[current].story_image }}
-            onError={() => console.log('videoerror')}
-            onBuffer={() => setLoad(true)}
-            onLoad={(val) => start({ duration: val.duration })} 
-            onLoadStart={handleVideoLoadStart}
-            style={[styles.image, storyImageStyle]} 
-            renderLoader={load &&
-              <View style={styles.spinnerContainer}>
-              <ActivityIndicator size="large" color={'white'} />
-            </View>
-            }
+            <Video
+              ref={videoRef}
+              paused={paused}
+              source={{uri: content[current].story_image}}
+              onError={() => console.log('videoerror')}
+              onBuffer={() => setLoad(true)}
+              onLoad={val => start({duration: val.duration})}
+              onProgress={data => (videoProgress.current = data.currentTime)}
+              onLoadStart={handleVideoLoadStart}
+              style={[styles.image, storyImageStyle]}
+              renderLoader={
+                load && (
+                  <View style={styles.spinnerContainer}>
+                    <ActivityIndicator size="large" color={'white'} />
+                  </View>
+                )
+              }
             />
-          ) :
-          (
-          <Image
-            onLoadEnd={() => start({ duration: duration })}
-            source={{ uri: content[current].story_image }}
-            style={[styles.image, storyImageStyle]}
-          />
+          ) : (
+            <Image
+              onLoadEnd={() => start({duration: duration})}
+              source={{uri: content[current].story_image}}
+              style={[styles.image, storyImageStyle]}
+            />
           )}
           {load && (
             <View style={styles.spinnerContainer}>
@@ -287,14 +395,12 @@ export const StoryListItem = ({
       </SafeAreaView>
       <View style={styles.flexCol}>
         <View
-          style={[styles.animationBarContainer, animationBarContainerStyle]}
-        >
+          style={[styles.animationBarContainer, animationBarContainerStyle]}>
           {content.map((index, key) => {
             return (
               <View
                 key={key}
-                style={[styles.animationBackground, unloadedAnimationBarStyle]}
-              >
+                style={[styles.animationBackground, unloadedAnimationBarStyle]}>
                 <Animated.View
                   style={[
                     {
@@ -313,7 +419,7 @@ export const StoryListItem = ({
           <View style={styles.flexRowCenter}>
             <Image
               style={[styles.avatarImage, storyAvatarImageStyle]}
-              source={{ uri: profileImage }}
+              source={{uri: profileImage}}
             />
             {typeof renderTextComponent === 'function' ? (
               renderTextComponent({
@@ -331,15 +437,22 @@ export const StoryListItem = ({
                 item: content[current],
               })
             ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  if (onClosePress) {
-                    onClosePress();
-                  }
-                }}
-              >
-                <Text style={styles.whiteText}>X</Text>
-              </TouchableOpacity>
+              <View
+                style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                {own_id === userId && (
+                  <TouchableOpacity onPress={() => deleteStory()}>
+                    <Ionicons name="trash-outline" size={21} color="white" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (onClosePress) {
+                      onClosePress();
+                    }
+                  }}>
+                  <Ionicons name="close" size={25} color="white" />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -349,14 +462,13 @@ export const StoryListItem = ({
             onLongPress={() => setPressed(true)}
             onPressOut={() => {
               setPressed(false);
-              startAnimation({ duration: null });
+              startAnimation({duration: null});
             }}
             onPress={() => {
               if (!pressed && !load) {
                 previous();
               }
-            }}
-          >
+            }}>
             <View style={styles.flex} />
           </TouchableWithoutFeedback>
           <TouchableWithoutFeedback
@@ -364,14 +476,13 @@ export const StoryListItem = ({
             onLongPress={() => setPressed(true)}
             onPressOut={() => {
               setPressed(false);
-              startAnimation({ duration: null });
+              startAnimation({duration: null});
             }}
             onPress={() => {
               if (!pressed && !load) {
                 next();
               }
-            }}
-          >
+            }}>
             <View style={styles.flex} />
           </TouchableWithoutFeedback>
         </View>
@@ -382,15 +493,51 @@ export const StoryListItem = ({
           item: content[current],
         })
       ) : (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={onSwipeUp}
-          style={styles.swipeUpBtn}
-        >
-          {/* <Text style={styles.swipeText}></Text>
-          <Text style={styles.swipeText}>{swipeText}</Text> */}
-        </TouchableOpacity>
+        <>
+          {own_id === userId ? (
+            <TouchableOpacity
+              onPress={() => openViewsSheet()}
+              style={styles.eyeView}>
+              <Ionicons name="eye" size={23} color="white" />
+              <Text style={styles.eyeTxt}>52</Text>
+            </TouchableOpacity>
+          ) : (
+            <Animated.View
+              style={[
+                styles.inputView,
+                {paddingBottom: keyboardHeight.current},
+              ]}>
+              <TextInput
+                placeholderTextColor={'#1877F2'}
+                placeholder="Send message"
+                style={styles.txtInput}
+              />
+              {isKeyboardOpen ? (
+                <TouchableOpacity>
+                  <Ionicons name="send-sharp" size={40} color="#141397" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => setisLiked(!isLiked)}>
+                  <Ionicons
+                    name={isLiked ? 'heart' : 'heart-outline'}
+                    size={40}
+                    color={isLiked ? 'red' : '#141397'}
+                  />
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          )}
+        </>
       )}
+      <BottomSheet
+        ref={storyViewsRef}
+        enablePanDownToClose={true}
+        snapPoints={['55%']}
+        index={-1}
+        backgroundStyle={{backgroundColor: 'black'}}
+        handleComponent={null}>
+        <BottomSheetComp data={viewsData} closeViewsSheet={closeViewsSheet} />
+      </BottomSheet>
     </GestureRecognizer>
   );
 };
@@ -489,5 +636,38 @@ const styles = StyleSheet.create({
   swipeText: {
     color: 'white',
     marginTop: 5,
+  },
+  txtInput: {
+    borderWidth: 1,
+    borderColor: '#518EF8',
+    width: '83%',
+    marginHorizontal: 10,
+    borderRadius: 25,
+    height: 45,
+    backgroundColor: 'black',
+    paddingHorizontal: 15,
+    color: 'white',
+  },
+  inputView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+  },
+  eyeView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    position: 'absolute',
+    bottom: 30,
+  },
+  eyeTxt: {
+    color: 'white',
+    fontWeight: '500',
+    marginLeft: 5,
+    fontSize: 15,
   },
 });
