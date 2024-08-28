@@ -28,7 +28,6 @@ const StoryCircleListItem = ({
   avatarWrapperStyle,
 }: StoryCircleListItemProps) => {
   const [isPressed, setIsPressed] = useState(item?.seen);
-  const {user} = useGlobalChatContext();
 
   const prevSeen = usePrevious(item?.seen);
 
@@ -104,7 +103,7 @@ const StoryCircleListItem = ({
               : { color: unPressedAvatarTextColor || '#99A1BE' },
           ]}
         >
-          {user?.id === item?.user_id ? 'Your Story' : item.user_name}
+          {item?.own_id === item?.user_id ? 'Your Story' : item.user_name}
         </Text>
       )}
     </View>
