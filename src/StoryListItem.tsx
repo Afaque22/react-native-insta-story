@@ -499,7 +499,7 @@ export const StoryListItem = ({
               onPress={() => openViewsSheet()}
               style={styles.eyeView}>
               <Ionicons name="eye" size={23} color="white" />
-              <Text style={styles.eyeTxt}>52</Text>
+              <Text style={styles.eyeTxt}>{viewsData?.length}</Text>
             </TouchableOpacity>
           ) : (
             <Animated.View
