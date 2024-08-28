@@ -1,3 +1,4 @@
+// changes by Afaque
 import {
   ColorValue,
   FlatListProps,
@@ -12,10 +13,11 @@ export interface IUserStory<T = Record<string, any>> {
   user_id: number;
   user_image: string | undefined;
   user_name: string;
+  own_id?: number;
   stories: IUserStoryItem<T>[];
   /** INTERNAL USE ONLY */
   seen?: boolean;
-  isSeen? : boolean;
+  isSeen?: boolean;
 }
 
 export interface IUserStoryItem<T = Record<string, any>> {
@@ -108,6 +110,7 @@ export interface StoryListItemProps {
   key: number;
   /** ID of the user - IUserStory.user_id */
   userId: number;
+  own_id: number;
   /** Name of the user - IUserStory.user_name */
   profileName: string;
   /** Profile picture of the user - IUserStory.user_image */
@@ -140,6 +143,7 @@ export interface StoryListItemProps {
   onStorySeen?: (userStory: IUserSingleStory) => any;
   /** An array of stories from one user */
   stories: IUserStoryItem[];
+  viewsData: [];
   currentPage: number;
   /** Custom style for the animation bar when it is loading */
   loadedAnimationBarStyle?: ViewStyle;
@@ -155,6 +159,8 @@ export interface StoryListItemProps {
   storyAvatarImageStyle?: ImageStyle;
   /** Custom styles for the main story item container */
   storyContainerStyle?: ViewStyle;
+
+  openSheet?: () => void;
 }
 
 export interface StoryProps {
@@ -232,4 +238,6 @@ export interface StoryProps {
   storyAvatarImageStyle?: ImageStyle;
   /** Custom styles for the main story item container */
   storyContainerStyle?: ViewStyle;
+
+  viewsData?: [];
 }
