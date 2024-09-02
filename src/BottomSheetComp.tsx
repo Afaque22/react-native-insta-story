@@ -1,3 +1,4 @@
+// Afaque 3.0
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -14,14 +15,14 @@ const BottomSheetComp = (props: Props) => {
       <View style={styles.row}>
         <Image
           source={{
-            uri: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+            uri: item.image
+              ? item.image
+              : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
           }}
           resizeMode="contain"
           style={styles.dp}
         />
-        <Text style={styles.userName}>
-          {item?.user_name ? item?.user_name : 'hello'}
-        </Text>
+        <Text style={styles.userName}>{item?.name}</Text>
       </View>
     );
   };
@@ -34,12 +35,20 @@ const BottomSheetComp = (props: Props) => {
           <Ionicons name="close-circle-outline" size={32} color="white" />
         </TouchableOpacity>
       </View>
-      <BottomSheetFlatList
-        data={props.data}
-        showsVerticalScrollIndicator={false}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-      />
+      {props.data?.length > 0 ? (
+        <BottomSheetFlatList
+          data={props.data}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+        />
+      ) : (
+        <View style={styles.msgView}>
+          <Text style={{color: 'white', fontSize: 16}}>
+            This story hasn't been viewed yet.
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -68,4 +77,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: 0.5,
   },
+  msgView: {flex: 1, justifyContent: 'center', alignItems: 'center'},
 });
