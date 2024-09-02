@@ -1,4 +1,4 @@
-// changes by Afaque
+// changes by Afaque 3.0
 import {
   ColorValue,
   FlatListProps,
@@ -12,6 +12,7 @@ export type NextOrPrevious = 'next' | 'previous';
 export interface IUserStory<T = Record<string, any>> {
   user_id: number;
   user_image: string | undefined;
+  thumbnail_image?: string | undefined;
   user_name: string;
   own_id?: number;
   stories: IUserStoryItem<T>[];
@@ -161,6 +162,8 @@ export interface StoryListItemProps {
   storyContainerStyle?: ViewStyle;
 
   openSheet?: () => void;
+
+  deleteStory?: (id: any) => any;
 }
 
 export interface StoryProps {
@@ -240,4 +243,6 @@ export interface StoryProps {
   storyContainerStyle?: ViewStyle;
 
   viewsData?: [];
+
+  deleteStory?: (id: any) => any;
 }
