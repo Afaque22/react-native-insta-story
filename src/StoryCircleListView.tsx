@@ -1,3 +1,4 @@
+// Afaque 3.0
 import React, { useMemo } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import StoryCircleListItem from './StoryCircleListItem';
