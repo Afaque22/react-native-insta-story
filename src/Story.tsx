@@ -1,4 +1,4 @@
-//Afaque
+//Afaque 3.0
 import React, {Fragment, useRef, useState, useEffect} from 'react';
 import {Dimensions, View, Platform, StyleSheet} from 'react-native';
 import Modal from 'react-native-modalbox';
@@ -41,6 +41,7 @@ export const Story = ({
   avatarWrapperStyle,
   avatarFlatListProps,
   viewsData,
+  deleteStory,
 }: StoryProps) => {
   const [dataState, setDataState] = useState<IUserStory[]>(data);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -150,6 +151,7 @@ export const Story = ({
           storyAvatarImageStyle={storyAvatarImageStyle}
           viewsData={viewsData || []}
           openSheet={openSheet}
+          deleteStory={deleteStory}
 
           // storyContainerStyle={storyContainerStyle}
         />
