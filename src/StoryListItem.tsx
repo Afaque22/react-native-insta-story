@@ -1,4 +1,4 @@
-//changes by Afaque 0.1
+//changes by Afaque 3.0
 import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   Animated,
@@ -54,6 +54,7 @@ export const StoryListItem = ({
   storyContainerStyle,
   viewsData,
   openSheet,
+  deleteStory,
   ...props
 }: StoryListItemProps) => {
   const [load, setLoad] = useState<boolean>(true);
@@ -326,7 +327,7 @@ export const StoryListItem = ({
     }
   };
 
-  const deleteStory = () => {
+  const deleteStoryAlert = () => {
     progress.stopAnimation();
     setPaused(true);
     const remainingTime = videoDuration
@@ -343,7 +344,33 @@ export const StoryListItem = ({
       },
       {
         text: 'OK',
-        onPress: () => {
+        onPress: async () => {
+          if (deleteStory) {
+            setLoad(true);
+            const result = await deleteStory(content[current]?.story_id);
+
+            console.log('res', result);
+
+            if (result.success) {
+              if (content.length > 1 && current < content.length - 1) {
+                const updatedStoriesArray = content.filter(
+                  story => story.story_id !== content[current]?.story_id,
+                );
+                setContent(updatedStoriesArray);
+              } else {
+                if (onClosePress) {
+                  onClosePress();
+                }
+              }
+              setLoad(false);
+              startAnimation(remainingTime);
+              setPaused(false);
+            } else {
+              console.error('Story deletion failed');
+            }
+          } else {
+            console.error('deleteStory is undefined');
+          }
           startAnimation(remainingTime);
           setPaused(false);
         },
@@ -440,7 +467,7 @@ export const StoryListItem = ({
               <View
                 style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
                 {own_id === userId && (
-                  <TouchableOpacity onPress={() => deleteStory()}>
+                  <TouchableOpacity onPress={() => deleteStoryAlert()}>
                     <Ionicons name="trash-outline" size={21} color="white" />
                   </TouchableOpacity>
                 )}
@@ -494,7 +521,7 @@ export const StoryListItem = ({
         })
       ) : (
         <>
-          {own_id === userId ? (
+          {own_id === userId && viewsData ? (
             <TouchableOpacity
               onPress={() => openViewsSheet()}
               style={styles.eyeView}>
@@ -577,10 +604,10 @@ const styles = StyleSheet.create({
     right: 0,
   },
   spinnerContainer: {
-    zIndex: -100,
+    zIndex: 99999999,
     position: 'absolute',
     justifyContent: 'center',
-    backgroundColor: 'black',
+    backgroundColor: 'transparent',
     alignSelf: 'center',
     width: width,
     height: height,
