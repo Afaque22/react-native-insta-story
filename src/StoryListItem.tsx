@@ -13,10 +13,9 @@ import {
   Platform,
   SafeAreaView,
   TextInput,
-  KeyboardAvoidingView,
   Keyboard,
   Alert,
-  BackHandler,
+  PanResponder,
 } from 'react-native';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -55,6 +54,7 @@ export const StoryListItem = ({
   viewsData,
   openSheet,
   deleteStory,
+  likeComment,
   ...props
 }: StoryListItemProps) => {
   const [load, setLoad] = useState<boolean>(true);
@@ -72,6 +72,7 @@ export const StoryListItem = ({
   const keyboardHeight = useRef(new Animated.Value(0));
   const [isKeyboardOpen, setisKeyboardOpen] = useState(false);
   const [isLiked, setisLiked] = useState(false);
+  const [comment, setComment] = useState('');
 
   const prevCurrentPage = usePrevious(currentPage);
 
@@ -378,6 +379,38 @@ export const StoryListItem = ({
     ]);
   };
 
+  const sendComment = (val: any) => {
+    console.log(val, 'val');
+    setLoad(true);
+    if (likeComment) {
+      likeComment(val)
+        .then((response: any) => {
+          console.log(response); // Success message
+          setLoad(false);
+          if (val === 'like') {
+            setisLiked(!isLiked);
+          } else {
+            setComment('');
+          }
+        })
+        .catch((error: any) => {
+          setLoad(false);
+          console.error(error); // Error message
+        });
+    }
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Handle touch event here
+        sendComment('comment');
+      },
+    }),
+  ).current;
+
   return (
     <GestureRecognizer
       key={key}
@@ -538,13 +571,15 @@ export const StoryListItem = ({
                 placeholderTextColor={'#1877F2'}
                 placeholder="Send message"
                 style={styles.txtInput}
+                value={comment}
+                onChangeText={val => setComment(val)}
               />
               {isKeyboardOpen ? (
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => sendComment('comment')}>
                   <Ionicons name="send-sharp" size={40} color="#141397" />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity onPress={() => setisLiked(!isLiked)}>
+                <TouchableOpacity onPress={() => sendComment('like')}>
                   <Ionicons
                     name={isLiked ? 'heart' : 'heart-outline'}
                     size={40}
@@ -679,7 +714,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: 'absolute',
-    bottom: 0,
+    bottom: 10,
   },
   eyeView: {
     flexDirection: 'row',
