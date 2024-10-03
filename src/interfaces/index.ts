@@ -1,4 +1,4 @@
-// changes by Afaque 3.0
+// changes by Afaque 4.0
 import {
   ColorValue,
   FlatListProps,
@@ -164,6 +164,7 @@ export interface StoryListItemProps {
   openSheet?: () => void;
 
   deleteStory?: (id: any) => any;
+  likeComment?: (id: any) => any;
 }
 
 export interface StoryProps {
@@ -245,4 +246,6 @@ export interface StoryProps {
   viewsData?: [];
 
   deleteStory?: (id: any) => any;
+
+  likeComment?: (id: any) => any;
 }
